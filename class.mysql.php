@@ -7,12 +7,13 @@ class mysql_conn {
     public $insert_id;      // the id of the last inserted post
     public $resource;       // the mysql resource of the last query (or null after no return)
     public $affected_rows;  // number of affected rows by the last query
+    public $num_rows;       // number of returned rows by last query
     public $queries;        // number of queries performed since script start
     public $conn_start;     // unix timestamp (in microseconds)
                             // for when the class was initialized
-    
+    public $last_query;    // holds the last query sent to the server.
 
-    private $last_query;    // holds the last query sent to the server.
+    
     private $link;          // handle to our mysql connection
 /*
     private $username;      // mysql username
@@ -35,6 +36,19 @@ class mysql_conn {
         return microtime(true)-$this->conn_start;
     }
     
+    public function ainsert($table,$fields,$values) {
+        $v = "";
+        $f = "";
+        foreach($values as $i => $value) {
+            $field = $fields[$i];
+            $v .= "'".$this->sqlesc($value)."',";
+            $f .= "`$field`,";
+        }
+        $v = substr($v,0,-1);
+        $f = substr($f,0,-1);
+        return $this->q("INSERT INTO `$table` ($f) values ($v)");
+    }
+    
 // public query function 
     public function query() {
         $args = func_get_args();
@@ -53,6 +67,7 @@ class mysql_conn {
     public function __destruct() {
         mysql_close($this->link);
     }
+    
 
 // escapes arguments with odd index numbers, and assumes even are safe.
     private function escape_args(array $args) {
@@ -74,6 +89,11 @@ class mysql_conn {
         $this->result = mysql_query($query,$this->link) or $this->err(mysql_error());
         $this->queries++;
         $this->affected_rows = mysql_affected_rows($this->link);
+        if(is_resource($this->result)) {
+            $this->num_rows = mysql_num_rows($this->result);
+        } else {
+            $this->num_rows = 0;
+        }
         
         $this->insert_id = mysql_insert_id($this->link); // <-- Ugly sollution, I know
     }
