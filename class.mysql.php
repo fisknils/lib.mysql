@@ -53,7 +53,6 @@ class mysql_conn {
     public function __destruct() {
         mysql_close($this->link);
     }
-    
 
 // escapes arguments with odd index numbers, and assumes even are safe.
     private function escape_args(array $args) {
